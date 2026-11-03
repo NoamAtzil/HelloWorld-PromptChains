@@ -1,31 +1,37 @@
 import Link from "next/link";
+import { EmptyArt } from "./art";
+import { Icon } from "./icons";
 
 export function PageHeader({
   title,
+  eyebrow,
   description,
   actions,
   back,
 }: {
   title: string;
+  eyebrow?: string;
   description?: string;
   actions?: React.ReactNode;
   back?: { href: string; label: string };
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <header className="flex flex-col gap-3">
       {back && (
-        <Link href={back.href} className="w-fit text-sm font-medium text-muted hover:text-accent-text">
-          ← {back.label}
+        <Link href={back.href} className="group inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-accent-text">
+          <Icon name="arrow" className="h-4 w-4 rotate-180 transition-transform group-hover:-translate-x-0.5" />
+          {back.label}
         </Link>
       )}
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold sm:text-3xl">{title}</h1>
-          {description && <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p>}
+          {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+          <h1 className="mt-1 text-[2rem] leading-[1.06] sm:text-4xl lg:text-[2.7rem]">{title}</h1>
+          {description && <p className="mt-2 max-w-2xl text-[0.95rem] leading-relaxed text-muted">{description}</p>}
         </div>
         {actions}
       </div>
-    </div>
+    </header>
   );
 }
 
@@ -33,64 +39,42 @@ export function Notice({ tone, children }: { tone: "ok" | "warn"; children: Reac
   return (
     <p
       role={tone === "warn" ? "alert" : "status"}
-      className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+      className={`flex items-start gap-2.5 rounded-2xl border px-4 py-3 text-sm font-medium ${
         tone === "ok" ? "border-ok-text/20 bg-ok-tint text-ok-text" : "border-coral/25 bg-coral-tint text-coral-text"
       }`}
     >
-      {children}
+      <Icon name={tone === "ok" ? "check" : "x"} className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.2} />
+      <span>{children}</span>
     </p>
   );
 }
 
 export function EmptyState({ title, children, action }: { title: string; children?: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="panel flex flex-col items-center gap-2 rounded-2xl px-6 py-12 text-center">
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-tint text-accent-text">
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M9 7H6a3 3 0 0 0 0 6h3M15 7h3a3 3 0 0 1 0 6h-3M8 10h8M9 17H6a3 3 0 0 1 0-6M15 17h3a3 3 0 0 0 0-6" />
-        </svg>
-      </span>
-      <p className="font-display text-lg font-semibold">{title}</p>
-      {children && <p className="max-w-sm text-sm text-muted">{children}</p>}
+    <div className="panel flex flex-col items-center gap-3 px-6 py-14 text-center">
+      <EmptyArt />
+      <h2 className="mt-2 text-2xl">{title}</h2>
+      {children && <p className="max-w-sm text-sm leading-relaxed text-muted">{children}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
 
-export function StatCard({ label, value, hint, index = 0 }: { label: string; value: string; hint?: string; index?: number }) {
-  return (
-    <div className="panel rise relative overflow-hidden rounded-2xl p-4" style={{ "--i": index } as React.CSSProperties}>
-      <span aria-hidden="true" className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full bg-glow/20 blur-2xl" />
-      <p className="relative text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
-      <p className="relative mt-2 text-3xl font-bold tabular-nums tracking-tight">{value}</p>
-      {hint && <p className="relative mt-1 text-xs text-muted">{hint}</p>}
-    </div>
-  );
-}
-
 // Signed storage URLs are short-lived and not optimizable by next/image.
-export function Thumb({
-  src,
-  alt,
-  className = "",
-}: {
-  src: string | undefined;
-  alt: string;
-  className?: string;
-}) {
+export function Thumb({ src, alt, className = "" }: { src: string | undefined; alt: string; className?: string }) {
   if (!src) {
     return (
-      <div className={`grid place-items-center bg-tint text-xs text-muted ${className}`} role="img" aria-label={alt}>
-        Photo unavailable
+      <div className={`grid place-items-center bg-tint text-muted ${className}`} role="img" aria-label={alt}>
+        <Icon name="photo" className="h-6 w-6 opacity-60" />
       </div>
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} loading="lazy" className={`object-cover ${className}`} />;
+  return <img src={src} alt={alt} loading="lazy" decoding="async" className={`object-cover ${className}`} />;
 }
 
 export function RunStatusChip({ status }: { status: string }) {
-  if (status === "succeeded") return <span className="chip chip-ok">Done</span>;
-  if (status === "failed") return <span className="chip chip-bad">Failed</span>;
-  return <span className="chip">Running</span>;
+  if (status === "succeeded") return <span className="chip chip-ok"><Icon name="check" className="h-3 w-3" strokeWidth={2.6} /> Done</span>;
+  if (status === "failed") return <span className="chip chip-bad">Stopped</span>;
+  return <span className="chip"><span className="spinner !h-3 !w-3" /> Running</span>;
 }

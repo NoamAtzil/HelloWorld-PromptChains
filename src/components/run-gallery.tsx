@@ -1,38 +1,41 @@
 import Link from "next/link";
-import { RunStatusChip, Thumb } from "@/components/ui";
-import { formatDateTime } from "@/lib/format";
+import { Icon } from "./icons";
+import { LocalTime } from "./local-time";
+import { RunStatusChip, Thumb } from "./ui";
+import { voiceTheme } from "@/lib/voice-theme";
 import type { Run } from "@/lib/types";
 
-export type GalleryRun = Pick<Run, "id" | "chain_id" | "chain_name" | "status" | "final_output" | "image_path" | "image_title" | "created_at">;
+export type GalleryRun = Pick<Run, "id" | "chain_id" | "chain_name" | "voice_id" | "status" | "final_output" | "image_path" | "image_title" | "created_at">;
 
-// Photo + the caption the chain produced. Each card opens the full run.
+// A portfolio wall: photos keep their natural proportions, captions are set in
+// the display serif, and each card opens the full result.
 export function RunGallery({ runs, urls, showChain = false }: { runs: GalleryRun[]; urls: Map<string, string>; showChain?: boolean }) {
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="columns-1 gap-5 sm:columns-2 xl:columns-3 [&>li]:mb-5">
       {runs.map((run, i) => (
-        <li key={run.id} className="rise" style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
-          <Link
-            href={`/runs/${run.id}`}
-            className="panel group flex h-full flex-col overflow-hidden rounded-2xl transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-glow)]"
-          >
-            <Thumb
-              src={urls.get(run.image_path)}
-              alt={run.image_title || `Photo for run ${run.id}`}
-              className="aspect-[4/3] w-full"
-            />
-            <div className="flex flex-1 flex-col gap-2 p-4">
-              <p className="font-display text-base font-semibold leading-snug">
-                {run.final_output ?? (run.status === "running" ? "Still running…" : "No caption: the run did not finish.")}
+        <li key={run.id} className="rise break-inside-avoid" style={{ "--i": Math.min(i, 9) } as React.CSSProperties}>
+          <Link href={`/runs/${run.id}`} className="panel lift group block overflow-hidden !rounded-[1.5rem]">
+            <div className="relative min-h-40 overflow-hidden bg-tint">
+              <Thumb src={urls.get(run.image_path)} alt={run.image_title || `Photo for result ${run.id}`} className="h-auto w-full transition-transform duration-700 group-hover:scale-[1.04]" />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#211a14] opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 translate-y-1">
+                View result <Icon name="arrow" className="h-3.5 w-3.5" />
+              </span>
+            </div>
+            <div className="flex flex-col gap-3 p-5">
+              <p className="caption-text text-[1.3rem]">
+                {run.final_output ? <>&ldquo;{run.final_output}&rdquo;</> : run.status === "running" ? "Still being written…" : "This run stopped before a caption was written."}
               </p>
-              <div className="mt-auto flex flex-wrap items-center gap-2 pt-1 text-xs text-muted">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
                 {showChain && (
-                  <span className="truncate font-medium text-ink">
-                    {run.chain_name}
-                    {run.chain_id === null && <span className="chip chip-mute ml-1.5">deleted</span>}
+                  <span className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-ink-2">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: voiceTheme(run.voice_id).from }} aria-hidden="true" />
+                    <span className="truncate">{run.chain_name}</span>
+                    {run.chain_id === null && <span className="chip chip-mute">deleted</span>}
                   </span>
                 )}
                 {run.status !== "succeeded" && <RunStatusChip status={run.status} />}
-                <span className="ml-auto">{formatDateTime(run.created_at)}</span>
+                <LocalTime iso={run.created_at} className="ml-auto" />
               </div>
             </div>
           </Link>

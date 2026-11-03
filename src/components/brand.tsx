@@ -4,7 +4,7 @@ import Link from "next/link";
 export function Brand({ linked = true }: { linked?: boolean }) {
   const mark = (
     <>
-      <span className="font-display text-xl font-bold tracking-tight">
+      <span className="font-brand text-xl font-bold tracking-tight">
         capti
         <span
           aria-hidden="true"
@@ -15,7 +15,7 @@ export function Brand({ linked = true }: { linked?: boolean }) {
         </span>
         n
       </span>
-      <span className="rounded-md bg-tint px-1.5 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wider text-accent-text">
+      <span className="rounded-full bg-tint px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-accent-text">
         Chains
       </span>
     </>

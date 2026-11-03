@@ -23,3 +23,7 @@ Third app of the caption project (Columbia HW8). Superadmin-only prompt-chain bu
 
 ## What not to do
 - Don't use `@tailwindcss/postcss` here: it fails on Node 20 locally; use the `@tailwindcss/turbopack` rule in `next.config.ts` and keep the `magic-string` override (1.x is ESM-only and breaks the Tailwind loader on Node 20).
+- Keep custom component classes (`.btn-*`, `.panel`, `.field`, ...) inside `@layer components` in `globals.css`. Unlayered CSS beats Tailwind utilities, so `lg:hidden` / `!rounded-*` silently stop working on them.
+- `@theme inline` does not emit `--font-display` etc. as CSS variables: a raw `var(--font-display)` is invalid and falls back to sans. Reference the `next/font` variables directly (`var(--font-fraunces)`).
+- `timeout` does not exist on macOS; don't wrap shell commands in it. Headless Chrome clamps windows to ~500px: test mobile layouts inside a 390px iframe.
+- `vercel project create` from the CLI leaves Framework Preset "Other", which fails with `STATIC_BUILD_EMPTY_OUT_DIR` after a successful build. Run `vercel project update <name> --framework nextjs --yes` right after creating.

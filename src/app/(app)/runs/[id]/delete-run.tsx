@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteRun } from "../actions";
+import { Icon } from "@/components/icons";
 
 export function DeleteRun({ runId }: { runId: number }) {
   const router = useRouter();
@@ -20,15 +21,15 @@ export function DeleteRun({ runId }: { runId: number }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 border-t border-line pt-5">
       {confirming ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted">Delete this run and its photo for good?</span>
-          <button type="button" onClick={remove} disabled={pending} className="btn-danger btn-sm">{pending ? "Deleting…" : "Delete run"}</button>
-          <button type="button" onClick={() => setConfirming(false)} className="btn-quiet btn-sm">Keep</button>
+          <span className="text-sm font-medium text-coral-text">Delete this result and its photo for good?</span>
+          <button type="button" onClick={remove} disabled={pending} className="btn-danger btn-sm">{pending ? "Deleting…" : "Delete"}</button>
+          <button type="button" onClick={() => setConfirming(false)} className="btn-quiet btn-sm">Keep it</button>
         </div>
       ) : (
-        <button type="button" onClick={() => setConfirming(true)} className="btn-quiet btn-sm w-fit text-coral-text">Delete run…</button>
+        <button type="button" onClick={() => setConfirming(true)} className="btn-ghost btn-sm w-fit hover:!text-coral-text"><Icon name="trash" /> Delete this result</button>
       )}
       {error && <p role="alert" className="text-sm text-coral-text">{error}</p>}
     </div>

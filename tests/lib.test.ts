@@ -78,3 +78,61 @@ test("detectImageType identifies by bytes, not by name", () => {
   assert.equal(detectImageType(webp)?.ext, "webp");
   assert.equal(detectImageType(new Uint8Array([0x3c, 0x73, 0x76, 0x67]))?.ext, undefined);
 });
+
+import { groupStages, ideasFor, stageFor, stagesFor } from "../src/lib/stages";
+import { dayKey, dayLabel, groupByDay, shiftKey } from "../src/lib/time";
+import { coverGradient, voiceTheme } from "../src/lib/voice-theme";
+
+test("stages: first thinks, last writes the caption, the middle refines", () => {
+  assert.deepEqual(stagesFor(1).map((s) => s.key), ["caption"]);
+  assert.deepEqual(stagesFor(2).map((s) => s.key), ["think", "caption"]);
+  assert.deepEqual(stagesFor(4).map((s) => s.key), ["think", "refine", "refine", "caption"]);
+  assert.deepEqual(stagesFor(0), []);
+  assert.equal(stageFor(0, 3).label, "Creative thinking");
+  assert.equal(stageFor(2, 3).label, "Final caption");
+});
+
+test("groupStages collapses runs of the same stage into one node", () => {
+  const groups = groupStages(stagesFor(5));
+  assert.deepEqual(groups.map((g) => [g.stage.key, g.start, g.end]), [["think", 0, 1], ["refine", 1, 4], ["caption", 4, 5]]);
+  assert.deepEqual(groupStages([]), []);
+});
+
+test("ideasFor suggests a sensible next step", () => {
+  assert.ok(ideasFor(0).every((i) => i.stage === "think"));
+  assert.ok(ideasFor(1).every((i) => i.stage !== "think"));
+  assert.ok(ideasFor(3).length > 0);
+});
+
+test("dayKey respects the viewer's time zone", () => {
+  // 03:30 UTC on Jan 2 is still Jan 1 in New York and already Jan 2 in Tokyo.
+  assert.equal(dayKey("2026-01-02T03:30:00Z", "America/New_York"), "2026-01-01");
+  assert.equal(dayKey("2026-01-02T03:30:00Z", "Asia/Tokyo"), "2026-01-02");
+  assert.equal(dayKey("2026-01-02T03:30:00Z", "UTC"), "2026-01-02");
+});
+
+test("shiftKey and dayLabel cross month and year boundaries", () => {
+  assert.equal(shiftKey("2026-03-01", -1), "2026-02-28");
+  assert.equal(shiftKey("2026-01-01", -1), "2025-12-31");
+  assert.equal(dayLabel("2026-05-10", "2026-05-10"), "Today");
+  assert.equal(dayLabel("2026-05-09", "2026-05-10"), "Yesterday");
+  assert.equal(dayLabel("2026-05-01", "2026-05-10"), "Friday, May 1");
+  assert.match(dayLabel("2025-12-31", "2026-01-02"), /December 31, 2025/);
+});
+
+test("groupByDay buckets newest-first items by local day", () => {
+  const items = ["2026-05-10T20:00:00Z", "2026-05-10T15:00:00Z", "2026-05-09T12:00:00Z"].map((iso) => ({ iso }));
+  const groups = groupByDay(items, (i) => i.iso, "America/New_York", new Date("2026-05-10T21:00:00Z"));
+  assert.deepEqual(groups.map((g) => [g.label, g.items.length]), [["Today", 2], ["Yesterday", 1]]);
+});
+
+test("voice themes: every voice has a distinct palette; unknown ids fall back", () => {
+  for (const id of ["classic", "roast", "noir", "nature", "grandma", "hype"]) {
+    const t = voiceTheme(id);
+    assert.match(t.from, /^#[0-9a-f]{6}$/);
+    assert.match(t.to, /^#[0-9a-f]{6}$/);
+  }
+  assert.notEqual(voiceTheme("noir").to, voiceTheme("hype").to);
+  assert.deepEqual(voiceTheme("nope"), voiceTheme(null));
+  assert.match(coverGradient("roast"), /^linear-gradient\(135deg, #/);
+});

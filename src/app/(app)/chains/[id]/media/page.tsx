@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin";
 import { signedImageUrls } from "@/lib/media";
+import { Icon } from "@/components/icons";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { RunGallery, type GalleryRun } from "@/components/run-gallery";
 
@@ -16,7 +17,7 @@ export default async function ChainMediaPage(props: PageProps<"/chains/[id]/medi
 
   const { data } = await supabase
     .from("prompt_chain_runs")
-    .select("id, chain_id, chain_name, status, final_output, image_path, image_title, created_at")
+    .select("id, chain_id, chain_name, voice_id, status, final_output, image_path, image_title, created_at")
     .eq("chain_id", id)
     .eq("status", "succeeded")
     .order("created_at", { ascending: false })
@@ -27,10 +28,15 @@ export default async function ChainMediaPage(props: PageProps<"/chains/[id]/medi
 
   return (
     <>
-      <PageHeader title={`Media: ${chain.name}`} description="Photos this chain has captioned, newest first." back={{ href: `/chains/${id}`, label: "Back to the builder" }} />
+      <PageHeader
+        eyebrow="Gallery"
+        title={chain.name}
+        description={runs.length ? `${runs.length} ${runs.length === 1 ? "caption" : "captions"} made by this chain, newest first.` : "Photos this chain has captioned will appear here."}
+        back={{ href: `/chains/${id}`, label: "Back to the builder" }}
+      />
       {runs.length === 0 ? (
-        <EmptyState title="Nothing generated yet" action={<Link href={`/chains/${id}`} className="btn-primary">Run the chain</Link>}>
-          Finished runs of this chain will appear here.
+        <EmptyState title="Nothing made yet" action={<Link href={`/chains/${id}`} className="btn-primary"><Icon name="spark" /> Run the chain</Link>}>
+          Run this chain on a photo and the result will be saved here.
         </EmptyState>
       ) : (
         <RunGallery runs={runs} urls={urls} />

@@ -10,8 +10,8 @@ export function DeleteChain({ chainId, name, runCount }: { chainId: number; name
   const matches = typed.trim().toLowerCase() === name.trim().toLowerCase();
 
   return (
-    <section className="panel rounded-2xl border-coral/30 p-5" aria-labelledby="danger-title">
-      <h2 id="danger-title" className="text-lg font-semibold text-coral-text">Delete this chain</h2>
+    <section className="panel !border-coral/30 p-5 sm:p-6" aria-labelledby="danger-title">
+      <h2 id="danger-title" className="text-xl text-coral-text">Delete this chain</h2>
       <p className="mt-1 text-sm text-muted">
         The chain and its steps are removed.{" "}
         <strong className="text-ink">
@@ -19,7 +19,7 @@ export function DeleteChain({ chainId, name, runCount }: { chainId: number; name
             ? `Its ${runCount} run${runCount === 1 ? "" : "s"} and their photos are kept`
             : "Past runs, if any, are always kept"}
         </strong>{" "}
-        in History and Media, labelled as a deleted chain.
+        in your Gallery and History, labelled as a deleted chain.
       </p>
       {!open ? (
         <button type="button" onClick={() => setOpen(true)} className="btn-quiet mt-3 text-coral-text">
