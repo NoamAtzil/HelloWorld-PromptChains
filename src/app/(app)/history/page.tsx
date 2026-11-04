@@ -107,7 +107,7 @@ export default async function HistoryPage(props: PageProps<"/history">) {
           {filtered ? "Try a different chain or outcome." : "When you run a chain, each result is kept here with its photo and every step."}
         </EmptyState>
       ) : (
-        <Timeline runs={runs} />
+        <Timeline runs={runs} nowIso={new Date().toISOString()} />
       )}
 
       {pages > 1 && (

@@ -23,3 +23,10 @@ export function dropIndex(from: number, over: number, after: boolean) {
 export function sameOrder(a: readonly number[], b: readonly number[]) {
   return a.length === b.length && a.every((v, i) => v === b[i]);
 }
+
+/** Returns a copy of `items` with `item` inserted at `index` (clamped). */
+export function insertAt<T>(items: readonly T[], item: T, index: number): T[] {
+  const copy = items.slice();
+  copy.splice(Math.max(0, Math.min(index, copy.length)), 0, item);
+  return copy;
+}

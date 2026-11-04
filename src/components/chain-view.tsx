@@ -10,8 +10,7 @@ import type { Chain, LibraryImage, Step } from "@/lib/types";
 import { ChainForm } from "@/app/(app)/chains/chain-form";
 import { DeleteChain } from "@/app/(app)/chains/delete-chain";
 import { updateChain } from "@/app/(app)/chains/actions";
-import { RunPanel } from "@/app/(app)/chains/[id]/run-panel";
-import { StepList } from "@/app/(app)/chains/[id]/step-list";
+import { Workspace } from "@/components/workspace";
 
 export type RecentRun = { id: number; status: string; final_output: string | null; created_at: string; imageUrl: string | undefined };
 
@@ -22,10 +21,11 @@ export type ChainViewProps = {
   recent: RecentRun[];
   runCount: number;
   notRunnableReason: string | null;
+  modelLabel: string;
 };
 
 // Presentational: all data is prepared by the page (or a preview harness).
-export function ChainView({ chain, steps: stepRows, library, recent: recentRuns, runCount: count, notRunnableReason: reason }: ChainViewProps) {
+export function ChainView({ chain, steps: stepRows, library, recent: recentRuns, runCount: count, notRunnableReason: reason, modelLabel }: ChainViewProps) {
   const id = chain.id;
   return (
     <>
@@ -53,54 +53,44 @@ export function ChainView({ chain, steps: stepRows, library, recent: recentRuns,
                 <a href="#studio" className="btn-primary btn-sm lg:hidden"><Icon name="spark" /> Jump to the studio</a>
               </div>
             </div>
-            <div className="rounded-2xl bg-sunken px-4 py-5 ring-1 ring-line sm:px-8">
+            <div className="liquid rounded-2xl px-4 py-5 sm:px-8">
               <JourneyTrack stages={stagesFor(stepRows.length)} />
             </div>
           </div>
         </section>
       </div>
 
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_25rem]">
-        <div className="flex min-w-0 flex-col gap-10">
-          <section aria-labelledby="steps-title" className="flex flex-col gap-5">
-            <div>
-              <p className="eyebrow">The recipe</p>
-              <h2 id="steps-title" className="mt-1 text-3xl">Steps</h2>
-              <p className="mt-1 text-sm text-muted">Drag the handle, or use the arrows, to change the order. Changes to the order save instantly.</p>
-            </div>
-            <StepList chainId={id} steps={stepRows} />
-          </section>
-
-          <details className="panel group p-5 sm:p-6">
-            <summary className="flex cursor-pointer list-none items-center gap-3 marker:content-none">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-tint text-accent-text"><Icon name="settings" /></span>
-              <span className="flex-1">
-                <span className="display block text-lg leading-tight">Chain settings</span>
-                <span className="text-xs text-muted">Name, description, voice, and whether it can be run</span>
-              </span>
-              <Icon name="down" className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="mt-5 border-t border-line pt-5">
-              <ChainForm action={updateChain.bind(null, id)} chain={chain} submitLabel="Save settings" />
-            </div>
-          </details>
-
-          <DeleteChain chainId={id} name={chain.name} runCount={count} />
-        </div>
-
-        <aside className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-24">
-          <RunPanel
-            chainId={id}
-            steps={stepRows.map((s) => ({ id: s.id, instruction: s.instruction }))}
-            library={library}
-            runnable={reason === null}
-            notRunnableReason={reason}
-          />
-
+      <Workspace
+        chainId={id}
+        steps={stepRows}
+        library={library}
+        runnable={reason === null}
+        notRunnableReason={reason}
+        voiceLabel={voiceLabel(chain.voice_id)}
+        modelLabel={modelLabel}
+        leftFooter={
+          <>
+            <details className="panel group p-5 sm:p-6">
+              <summary className="flex cursor-pointer list-none items-center gap-3 marker:content-none">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-tint text-accent-text"><Icon name="settings" /></span>
+                <span className="flex-1">
+                  <span className="display block text-lg leading-tight">Chain settings</span>
+                  <span className="text-xs text-muted">Name, description, voice, and whether it can be run</span>
+                </span>
+                <Icon name="down" className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="mt-5 border-t border-line pt-5">
+                <ChainForm action={updateChain.bind(null, id)} chain={chain} submitLabel="Save settings" />
+              </div>
+            </details>
+            <DeleteChain chainId={id} name={chain.name} runCount={count} />
+          </>
+        }
+        rightFooter={
           <section className="panel p-5" aria-labelledby="recent-title">
             <div className="flex items-center justify-between">
               <h2 id="recent-title" className="text-xl">Recent results</h2>
-              {(count) > 0 && <Link href={`/history?chain=${id}`} className="text-sm font-semibold text-accent-text hover:underline">All {count}</Link>}
+              {count > 0 && <Link href={`/history?chain=${id}`} className="text-sm font-semibold text-accent-text hover:underline">All {count}</Link>}
             </div>
             {recentRuns.length === 0 ? (
               <p className="mt-2 text-sm text-muted">Nothing yet. Your first run will show up here.</p>
@@ -123,8 +113,8 @@ export function ChainView({ chain, steps: stepRows, library, recent: recentRuns,
               </ul>
             )}
           </section>
-        </aside>
-      </div>
+        }
+      />
     </>
   );
 }

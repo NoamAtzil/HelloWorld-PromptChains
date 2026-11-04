@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { friendlyError, requireAdmin } from "@/lib/admin";
 import { isVoiceId } from "@/lib/voices";
+import { insertAt } from "@/lib/order";
 import type { ActionResult } from "@/lib/types";
 
 export type FormState = { error?: string; saved?: boolean } | undefined;
@@ -141,5 +142,39 @@ export async function reorderSteps(chainId: number, stepIds: number[]): Promise<
     return { ok: false, error: friendlyError(error) };
   }
   revalidatePath(`/chains/${chainId}`);
+  return { ok: true };
+}
+
+// Insert a step BETWEEN existing steps. The database only appends, so this is
+// two of its own atomic calls: append, then reorder with the new step moved to
+// the position right after `afterStepId`. If the second call fails the step still exists (at the end) and the
+// message says so; nothing is lost.
+export async function insertStep(chainId: number, afterStepId: number | null, instruction: string): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+  const text = instruction.trim();
+  if (text.length < 1 || text.length > 1000) {
+    return { ok: false, error: "A step instruction must be 1 to 1000 characters." };
+  }
+  if (afterStepId !== null && !Number.isSafeInteger(afterStepId)) return { ok: false, error: "Invalid position." };
+
+  const { data: newId, error } = await supabase.rpc("add_prompt_chain_step", { p_chain_id: chainId, p_instruction: text });
+  if (error || typeof newId !== "number") {
+    if (error) console.error("insertStep add failed:", error.message);
+    return { ok: false, error: error ? friendlyError(error) : "Could not add the step." };
+  }
+
+  const { data: rows } = await supabase.from("prompt_chain_steps").select("id").eq("chain_id", chainId).order("position", { ascending: true });
+  const others = (rows ?? []).map((r) => r.id as number).filter((id) => id !== newId);
+  const { error: moveError } = await supabase.rpc("reorder_prompt_chain_steps", {
+    p_chain_id: chainId,
+    // Right after the step it was anchored to (or first if there is none); the list is read fresh here.
+    p_step_ids: insertAt(others, newId, afterStepId === null ? 0 : others.indexOf(afterStepId) + 1),
+  });
+  revalidatePath(`/chains/${chainId}`);
+  revalidatePath("/");
+  if (moveError) {
+    console.error("insertStep reorder failed:", moveError.message);
+    return { ok: false, error: "The step was added at the end, but could not be moved into place. Drag it where you want it." };
+  }
   return { ok: true };
 }

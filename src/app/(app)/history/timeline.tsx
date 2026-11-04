@@ -23,9 +23,12 @@ export type TimelineRun = {
 };
 
 // A day-by-day timeline. Days are computed in the viewer's own time zone.
-export function Timeline({ runs }: { runs: TimelineRun[] }) {
+// `nowIso` comes from the server so "Today" is the same instant during server
+// render and hydration (reading the clock while rendering could disagree
+// across midnight).
+export function Timeline({ runs, nowIso }: { runs: TimelineRun[]; nowIso: string }) {
   const timeZone = useTimeZone();
-  const groups = groupByDay(runs, (r) => r.created_at, timeZone);
+  const groups = groupByDay(runs, (r) => r.created_at, timeZone, new Date(nowIso));
 
   return (
     <div className="flex flex-col gap-9">

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { HeroArt } from "@/components/art";
+import { StoryScene } from "@/components/story-scene";
 import { Brand } from "@/components/brand";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { Icon } from "@/components/icons";
@@ -27,7 +27,7 @@ export default async function LoginPage() {
           Make every photo <em className="font-semibold italic text-accent-text">say something.</em>
         </h1>
         <p className="max-w-lg text-lg leading-relaxed text-ink-2">Design small creative recipes, run them on your photos, and keep a portfolio of the captions they write.</p>
-        <div className="hidden w-full lg:block"><HeroArt /></div>
+        <div className="stage hidden w-full p-5 lg:block"><div className="stage-beam" aria-hidden="true" /><div className="relative"><StoryScene /></div></div>
       </div>
 
       <div className="flex flex-col gap-5">

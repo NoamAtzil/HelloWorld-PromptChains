@@ -48,3 +48,19 @@ export type Run = {
 export type LibraryImage = { id: number; storage_path: string; title: string };
 
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };
+
+// Live state of the run shown in the workspace (client only).
+export type StepView = { state: "pending" | "running" | "done" | "failed"; output?: string; latencyMs?: number };
+
+export type RunState = {
+  phase: "idle" | "running" | "done" | "failed";
+  view: StepView[] | null;
+  final: string | null;
+  runId: number | null;
+  error: string | null;
+  /** The steps the run was started with, to tell a previous result from the current chain. */
+  snapshot: { id: number; instruction: string }[] | null;
+  photoSrc: string | null;
+};
+
+export const IDLE_RUN: RunState = { phase: "idle", view: null, final: null, runId: null, error: null, snapshot: null, photoSrc: null };

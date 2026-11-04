@@ -80,7 +80,7 @@ test("detectImageType identifies by bytes, not by name", () => {
 });
 
 import { groupStages, ideasFor, stageFor, stagesFor } from "../src/lib/stages";
-import { dayKey, dayLabel, groupByDay, shiftKey } from "../src/lib/time";
+import { dayKey, dayLabel, formatClock, formatDay, formatStamp, groupByDay, shiftKey } from "../src/lib/time";
 import { coverGradient, voiceTheme } from "../src/lib/voice-theme";
 
 test("stages: first thinks, last writes the caption, the middle refines", () => {
@@ -135,4 +135,126 @@ test("voice themes: every voice has a distinct palette; unknown ids fall back", 
   assert.notEqual(voiceTheme("noir").to, voiceTheme("hype").to);
   assert.deepEqual(voiceTheme("nope"), voiceTheme(null));
   assert.match(coverGradient("roast"), /^linear-gradient\(135deg, #/);
+});
+
+import { moodFor, moodLine } from "../src/lib/mood";
+import { REST_INDEX, STORY, TOTAL_MS, nextIndex, phaseOf } from "../src/lib/story";
+import { diffAgainstSnapshot } from "../src/lib/run-state";
+import { insertAt } from "../src/lib/order";
+
+test("mood is a pure function of real run state", () => {
+  const base = { phase: "idle" as const, hasPhoto: false, stepIndex: -1, total: 4 };
+  assert.equal(moodFor(base), "idle");
+  assert.equal(moodFor({ ...base, hasPhoto: true }), "curious");
+  assert.equal(moodFor({ ...base, phase: "running", stepIndex: 0 }), "thinking");
+  assert.equal(moodFor({ ...base, phase: "running", stepIndex: 2 }), "thinking");
+  assert.equal(moodFor({ ...base, phase: "running", stepIndex: 3 }), "inspired", "the final caption step is the eureka moment");
+  assert.equal(moodFor({ ...base, phase: "running", stepIndex: 0, total: 1 }), "thinking");
+  assert.equal(moodFor({ ...base, phase: "done", hasPhoto: true }), "proud");
+  assert.equal(moodFor({ ...base, phase: "failed", hasPhoto: true }), "confused");
+  for (const m of ["idle", "curious", "squint", "thinking", "inspired", "proud", "confused"] as const) assert.ok(moodLine(m).length > 5);
+});
+
+test("the hero story is well-formed and loops", () => {
+  assert.ok(STORY.length >= 8);
+  assert.ok(STORY.every((s) => s.ms >= 500 && s.ms <= 6000));
+  assert.deepEqual(STORY.slice(0, 5).map((s) => s.id), ["rest", "notice", "approach", "examine", "think"]);
+  assert.equal(STORY[REST_INDEX].id, "proud", "the static frame is the finished picture");
+  assert.equal(STORY[REST_INDEX].mood, "proud");
+  assert.equal(nextIndex(STORY.length - 1), 0);
+  assert.equal(nextIndex(0), 1);
+  assert.ok(TOTAL_MS > 10_000 && TOTAL_MS < 30_000, "a loop long enough to breathe, short enough to stay interesting");
+  assert.equal(new Set(STORY.map((s) => s.id)).size, STORY.length, "no duplicate steps");
+});
+
+test("diffAgainstSnapshot tells the previous result from the current chain", () => {
+  const snap = [{ id: 1, instruction: "a" }, { id: 2, instruction: "b" }, { id: 3, instruction: "c" }];
+  const same = diffAgainstSnapshot(snap, snap.map((s) => ({ ...s })));
+  assert.equal(same.stale, false);
+  assert.deepEqual([...same.steps.values()], ["same", "same", "same"]);
+  assert.equal(diffAgainstSnapshot(null, snap).stale, false, "no run yet, nothing to compare");
+
+  const edited = diffAgainstSnapshot(snap, [{ id: 1, instruction: "a" }, { id: 2, instruction: "B!" }, { id: 3, instruction: "c" }]);
+  assert.equal(edited.stale, true);
+  assert.equal(edited.steps.get(2), "edited");
+  assert.equal(edited.steps.get(1), "same");
+
+  const moved = diffAgainstSnapshot(snap, [snap[1], snap[0], snap[2]]);
+  assert.equal(moved.stale, true);
+  assert.equal(moved.steps.get(1), "moved");
+  assert.equal(moved.steps.get(2), "moved", "swapping two steps moves both of them");
+  assert.equal(moved.steps.get(3), "same");
+
+  const added = diffAgainstSnapshot(snap, [...snap, { id: 9, instruction: "new" }]);
+  assert.equal(added.steps.get(9), "new");
+  assert.equal(added.stale, true);
+
+  const removed = diffAgainstSnapshot(snap, [snap[0], snap[2]]);
+  assert.equal(removed.removed, 1);
+  assert.equal(removed.stale, true);
+  assert.deepEqual([...removed.steps.values()], ["same", "same"], "deleting a step does not flag the others as moved");
+
+  const inserted = diffAgainstSnapshot(snap, [snap[0], { id: 9, instruction: "new" }, snap[1], snap[2]]);
+  assert.equal(inserted.steps.get(9), "new");
+  assert.deepEqual([inserted.steps.get(1), inserted.steps.get(2), inserted.steps.get(3)], ["same", "same", "same"], "inserting a step does not flag the steps after it as moved");
+
+  assert.equal(diffAgainstSnapshot(snap, snap.map((s) => ({ ...s, instruction: `  ${s.instruction}  ` }))).stale, false, "whitespace is not an edit");
+});
+
+test("insertAt places a step in the middle, clamps, and never mutates", () => {
+  const ids = [1, 2, 3];
+  assert.deepEqual(insertAt(ids, 9, 0), [9, 1, 2, 3]);
+  assert.deepEqual(insertAt(ids, 9, 2), [1, 2, 9, 3]);
+  assert.deepEqual(insertAt(ids, 9, 3), [1, 2, 3, 9]);
+  assert.deepEqual(insertAt(ids, 9, 99), [1, 2, 3, 9]);
+  assert.deepEqual(insertAt(ids, 9, -5), [9, 1, 2, 3]);
+  assert.deepEqual(ids, [1, 2, 3]);
+});
+
+test("every story step maps to a legend phase, in order", () => {
+  const phases = STORY.map((s) => phaseOf(s.id));
+  assert.deepEqual(phases, ["rest", "spot", "spot", "spot", "think", "think", "caption", "caption", "rest"]);
+});
+
+test("time text is built from fixed tables, so it is identical in every engine", () => {
+  const at = "2026-11-04T03:25:00Z"; // 10:25 PM on Nov 3 in New York
+  assert.equal(formatStamp(at, "America/New_York"), "Nov 3, 10:25 PM");
+  assert.equal(formatStamp(at, "UTC"), "Nov 4, 3:25 AM");
+  assert.equal(formatStamp(at, "Asia/Tokyo"), "Nov 4, 12:25 PM");
+  assert.equal(formatClock(at, "America/New_York"), "10:25 PM");
+  assert.equal(formatDay(at, "America/New_York"), "Nov 3, 2026");
+  // 12-hour edge cases: midnight is 12:00 AM, noon is 12:00 PM, 00:05 is 12:05 AM
+  assert.equal(formatClock("2026-11-04T05:00:00Z", "America/New_York"), "12:00 AM");
+  assert.equal(formatClock("2026-11-04T17:00:00Z", "America/New_York"), "12:00 PM");
+  assert.equal(formatClock("2026-11-04T05:05:00Z", "America/New_York"), "12:05 AM");
+  assert.equal(formatClock("2026-11-04T13:07:00Z", "UTC"), "1:07 PM");
+  // ASCII only: no narrow no-break space before AM/PM, no locale-specific " at "
+  assert.match(formatStamp(at, "America/New_York"), /^[\x20-\x7e]+$/);
+});
+
+test("time text does not change when an engine formats dates the Safari way", () => {
+  const proto = Intl.DateTimeFormat.prototype;
+  const descriptor = Object.getOwnPropertyDescriptor(proto, "format")!;
+  const toParts = proto.formatToParts;
+  const at = "2026-11-04T03:25:00Z";
+  const before = [formatStamp(at, "America/New_York"), formatClock(at, "America/New_York"), formatDay(at, "America/New_York"), dayLabel("2026-05-01", "2026-05-10")];
+  // Simulate Safari: " at " between date and time, plain spaces, different punctuation.
+  Object.defineProperty(proto, "format", { configurable: true, get() { return (d: Date) => `Nov 3 at 10:25 PM (${d.getTime()})`; } });
+  proto.formatToParts = function (this: Intl.DateTimeFormat, d?: Date | number) {
+    return toParts.call(this, d).map((p) => (p.type === "literal" ? { ...p, value: p.value === ", " ? " at " : p.value.replace("\u202f", " ") } : p));
+  };
+  try {
+    const during = [formatStamp(at, "America/New_York"), formatClock(at, "America/New_York"), formatDay(at, "America/New_York"), dayLabel("2026-05-01", "2026-05-10")];
+    assert.deepEqual(during, before);
+  } finally {
+    Object.defineProperty(proto, "format", descriptor);
+    proto.formatToParts = toParts;
+  }
+});
+
+test("dayKey and dayLabel agree across zones and never use Intl for the words", () => {
+  assert.equal(dayKey("2026-11-04T03:25:00Z", "America/New_York"), "2026-11-03");
+  assert.equal(dayKey("2026-11-04T03:25:00Z", "Asia/Tokyo"), "2026-11-04");
+  assert.equal(dayLabel("2026-10-26", "2026-11-03"), "Monday, October 26");
+  assert.equal(dayLabel("2025-12-31", "2026-01-02"), "Wednesday, December 31, 2025");
 });

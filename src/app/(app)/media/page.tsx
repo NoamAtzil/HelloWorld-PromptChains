@@ -48,7 +48,7 @@ export default async function MediaPage() {
       ) : (
         <div className="flex flex-col gap-14">
           {[...groups.values()].map((group) => (
-            <section key={group.id ?? `d:${group.name}`} className="flex flex-col gap-5" aria-label={group.name}>
+            <section key={group.id ?? `d:${group.name}`} className="reveal flex flex-col gap-5" aria-label={group.name}>
               <div className="flex flex-wrap items-center gap-3 border-b border-line pb-3">
                 <span className="h-3 w-3 rounded-full" style={{ background: `linear-gradient(135deg, ${voiceTheme(group.voice).from}, ${voiceTheme(group.voice).to})` }} aria-hidden="true" />
                 <h2 className="text-2xl">{group.name}</h2>

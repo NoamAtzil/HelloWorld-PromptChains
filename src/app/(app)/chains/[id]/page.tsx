@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ChainView } from "@/components/chain-view";
+import { MODEL } from "@/lib/gemini";
 import { requireAdmin } from "@/lib/admin";
 import { libraryUrl, signedImageUrls } from "@/lib/media";
 import { MAX_STEPS_PER_RUN } from "@/lib/prompt";
@@ -52,6 +53,7 @@ export default async function ChainPage(props: PageProps<"/chains/[id]">) {
       recent={recentRuns.map((r) => ({ id: r.id, status: r.status, final_output: r.final_output, created_at: r.created_at, imageUrl: urls.get(r.image_path) }))}
       runCount={count ?? 0}
       notRunnableReason={reason}
+      modelLabel={MODEL.replace("gemini-flash-latest", "Gemini Flash")}
     />
   );
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { HeroArt } from "@/components/art";
+import { StoryScene } from "@/components/story-scene";
 import { ChainCard, type ChainCardData } from "@/components/chain-card";
 import { Icon } from "@/components/icons";
 import { LocalTime } from "@/components/local-time";
@@ -28,45 +28,48 @@ export function HomeView({ deleted, cards, stats, fresh, hero }: HomeViewProps) 
         </Notice>
       )}
 
-      <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-6" aria-labelledby="hero-title">
-        <div className="flex flex-col items-start gap-6">
-          <p className="eyebrow inline-flex items-center gap-2 rounded-full bg-tint px-3 py-1.5">
-            <Icon name="spark" className="h-3.5 w-3.5" /> Prompt chain studio
-          </p>
-          <h1 id="hero-title" className="text-balance text-[2.6rem] leading-[1.02] sm:text-6xl lg:text-[4.1rem]">
-            Turn any photo into a caption <em className="font-semibold italic text-accent-text">worth sharing.</em>
-          </h1>
-          <p className="max-w-xl text-lg leading-relaxed text-ink-2">
-            Build a chain of small creative steps, run it on a photo, and watch a first impression become a finished line, one idea at a time.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href="/chains/new" className="btn-primary btn-lg">
-              <Icon name="plus" className="h-[1.1rem] w-[1.1rem]" strokeWidth={2.2} /> Create a chain
-            </Link>
-            {succeeded.length > 0 && (
-              <Link href="/media" className="btn-quiet btn-lg">
-                <Icon name="gallery" className="h-[1.1rem] w-[1.1rem]" /> See the gallery
+      <section className="stage" aria-labelledby="hero-title">
+        <div className="stage-beam" aria-hidden="true" />
+        <div className="relative grid items-center gap-4 p-6 sm:p-10 lg:grid-cols-[0.82fr_1.18fr] lg:gap-6 lg:p-12 lg:pr-8">
+          <div className="relative z-10 flex flex-col items-start gap-6">
+            <p className="eyebrow liquid inline-flex items-center gap-2 rounded-full px-3.5 py-1.5">
+              <Icon name="spark" className="h-3.5 w-3.5" /> Prompt chain studio
+            </p>
+            <h1 id="hero-title" className="text-balance text-[2.6rem] leading-[1.02] sm:text-6xl lg:text-[4rem]">
+              Turn any photo into a caption <em className="font-semibold italic text-accent-text">worth sharing.</em>
+            </h1>
+            <p className="max-w-xl text-lg leading-relaxed text-ink-2">
+              Build a chain of small creative steps, run it on a photo, and watch a first impression become a finished line, one idea at a time.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href="/chains/new" className="btn-primary btn-lg">
+                <Icon name="plus" className="h-[1.1rem] w-[1.1rem]" strokeWidth={2.2} /> Create a chain
               </Link>
-            )}
+              {succeeded.length > 0 && (
+                <Link href="/media" className="btn-quiet btn-lg">
+                  <Icon name="gallery" className="h-[1.1rem] w-[1.1rem]" /> See the gallery
+                </Link>
+              )}
+            </div>
+            <dl className="liquid liquid-strong mt-1 flex flex-wrap gap-x-7 gap-y-2 rounded-2xl px-5 py-3.5">
+              {[
+                { n: stats.chains, l: stats.chains === 1 ? "chain" : "chains" },
+                { n: stats.steps, l: stats.steps === 1 ? "step" : "steps" },
+                { n: stats.captions, l: stats.captions === 1 ? "caption made" : "captions made" },
+                ...(rate !== null ? [{ n: `${rate}%`, l: "run success" }] : []),
+              ].map((s) => (
+                <div key={s.l} className="flex flex-row-reverse items-baseline justify-end gap-2">
+                  <dt className="text-sm text-muted">{s.l}</dt>
+                  <dd className="display text-3xl tabular-nums">{s.n}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
-          <dl className="mt-1 flex flex-wrap gap-x-8 gap-y-3 border-t border-line pt-5">
-            {[
-              { n: stats.chains, l: stats.chains === 1 ? "chain" : "chains" },
-              { n: stats.steps, l: stats.steps === 1 ? "step" : "steps" },
-              { n: stats.captions, l: stats.captions === 1 ? "caption made" : "captions made" },
-              ...(rate !== null ? [{ n: `${rate}%`, l: "run success" }] : []),
-            ].map((s) => (
-              <div key={s.l} className="flex flex-row-reverse items-baseline justify-end gap-2">
-                <dt className="text-sm text-muted">{s.l}</dt>
-                <dd className="display text-3xl tabular-nums">{s.n}</dd>
-              </div>
-            ))}
-          </dl>
+          <StoryScene photoUrl={hero?.imageUrl} caption={hero?.caption} />
         </div>
-        <HeroArt photoUrl={hero?.imageUrl} caption={hero?.caption} />
       </section>
 
-      <section aria-labelledby="chains-title" className="flex flex-col gap-5">
+      <section aria-labelledby="chains-title" className="reveal flex flex-col gap-5">
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="eyebrow">Your recipes</p>
@@ -106,7 +109,7 @@ export function HomeView({ deleted, cards, stats, fresh, hero }: HomeViewProps) 
       </section>
 
       {fresh.length > 0 && (
-        <section aria-labelledby="fresh-title" className="flex flex-col gap-5">
+        <section aria-labelledby="fresh-title" className="reveal flex flex-col gap-5">
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="eyebrow">Just made</p>

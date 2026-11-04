@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { EmptyArt } from "./art";
+import { Creature } from "./creature";
+import type { Mood } from "@/lib/mood";
 import { Icon } from "./icons";
 
 export function PageHeader({
@@ -49,10 +50,10 @@ export function Notice({ tone, children }: { tone: "ok" | "warn"; children: Reac
   );
 }
 
-export function EmptyState({ title, children, action }: { title: string; children?: React.ReactNode; action?: React.ReactNode }) {
+export function EmptyState({ title, children, action, mood = "idle" }: { title: string; children?: React.ReactNode; action?: React.ReactNode; mood?: Mood }) {
   return (
     <div className="panel flex flex-col items-center gap-3 px-6 py-14 text-center">
-      <EmptyArt />
+      <div className="w-32" aria-hidden="true"><Creature mood={mood} /></div>
       <h2 className="mt-2 text-2xl">{title}</h2>
       {children && <p className="max-w-sm text-sm leading-relaxed text-muted">{children}</p>}
       {action && <div className="mt-2">{action}</div>}
